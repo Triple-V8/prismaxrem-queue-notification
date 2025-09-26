@@ -3,7 +3,7 @@ console.log('🎯 PrismaX AI Queue Monitor loaded');
 
 class QueueMonitor {
   constructor() {
-    this.backendUrl = 'http://localhost:3001/api';
+    this.backendUrl = 'https://prismaxrem-queue-notification.onrender.com/api';
     this.isMonitoring = false;
     this.lastQueueStatus = null;
     this.debounceTimer = null;

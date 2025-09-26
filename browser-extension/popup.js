@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     elements.openDashboardBtn.addEventListener('click', () => {
-      chrome.tabs.create({ url: 'http://localhost:3000' });
+      chrome.tabs.create({ url: 'https://prismaxrem-queue-notification.onrender.com' });
       window.close();
     });
   }
