@@ -387,7 +387,7 @@ const ReminderForm: React.FC = () => {
           </button>
         </div>
 
-        <div className="info-section">
+        <div className="info-section" style={{ padding: '30px' }}>
           <h3>How it works:</h3>
           <ol>
             <li>Register with your PrismaX AI username and email</li>
