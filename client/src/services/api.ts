@@ -162,7 +162,16 @@ export const api = {
     }
   },
 
-
+  // Get notification statistics
+  async getNotificationStats(): Promise<any> {
+    try {
+      const response = await axiosInstance.get('/queue/stats/notifications');
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to fetch notification statistics:', error);
+      throw error;
+    }
+  },
 
   // Health check
   async healthCheck(): Promise<any> {

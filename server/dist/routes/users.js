@@ -15,4 +15,3 @@ router.patch('/:id/notification-status', userController_1.default.updateNotifica
 router.post('/test-telegram', userController_1.default.testTelegram);
 router.get('/telegram/status', userController_1.default.getTelegramStatus);
 exports.default = router;
-//# sourceMappingURL=users.js.map

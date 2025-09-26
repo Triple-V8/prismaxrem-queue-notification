@@ -42,4 +42,3 @@ const validateQueueUpdate = (data) => {
     return schema.validate(data);
 };
 exports.validateQueueUpdate = validateQueueUpdate;
-//# sourceMappingURL=validationService.js.map

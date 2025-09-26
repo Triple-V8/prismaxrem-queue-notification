@@ -7,16 +7,28 @@ exports.testConnection = void 0;
 const pg_1 = require("pg");
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
-const poolConfig = {
-    user: process.env.DB_USER || 'postgres',
-    host: process.env.DB_HOST || 'localhost',
-    database: process.env.DB_NAME || 'reminder_app',
-    password: process.env.DB_PASSWORD || 'password',
-    port: Number(process.env.DB_PORT) || 5432,
-    max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
+const getDatabaseConfig = () => {
+    if (process.env.DATABASE_URL) {
+        return {
+            connectionString: process.env.DATABASE_URL,
+            ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+            max: 20,
+            idleTimeoutMillis: 30000,
+            connectionTimeoutMillis: 2000,
+        };
+    }
+    return {
+        user: process.env.DB_USER || 'postgres',
+        host: process.env.DB_HOST || 'localhost',
+        database: process.env.DB_NAME || 'reminder_app',
+        password: process.env.DB_PASSWORD || 'password',
+        port: Number(process.env.DB_PORT) || 5432,
+        max: 20,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000,
+    };
 };
+const poolConfig = getDatabaseConfig();
 const pool = new pg_1.Pool(poolConfig);
 pool.on('connect', () => {
     console.log('✅ Connected to PostgreSQL database');
@@ -39,4 +51,3 @@ const testConnection = async () => {
 };
 exports.testConnection = testConnection;
 exports.default = pool;
-//# sourceMappingURL=database.js.map

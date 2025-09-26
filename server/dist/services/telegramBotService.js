@@ -266,4 +266,3 @@ ${level.urgency}
     }
 }
 exports.telegramBotService = new TelegramBotService();
-//# sourceMappingURL=telegramBotService.js.map

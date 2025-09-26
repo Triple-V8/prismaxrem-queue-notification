@@ -31,12 +31,21 @@ const UserDashboard: React.FC = () => {
                     // This is okay - queue might not have any data yet
                 }
 
+                // Fetch notification statistics
+                let notificationStats = null;
+                try {
+                    notificationStats = await api.getNotificationStats();
+                } catch (notificationError) {
+                    console.log('No notification statistics available yet:', notificationError);
+                    // This is okay - might be no notifications sent yet
+                }
+
                 // Calculate stats - usersResponse has a 'users' property containing the array
                 const users = usersResponse.users || [];
                 const dashboardData: DashboardStats = {
                     totalUsers: users.length || 0,
                     activeNotifications: users.filter((user: any) => user.isActive).length || 0,
-                    totalNotificationsSent: 0, // This would come from notification logs
+                    totalNotificationsSent: notificationStats?.stats?.totalNotificationsSent || 0,
                     lastQueueUpdate: queueResponse?.timestamp || new Date().toISOString()
                 };
 

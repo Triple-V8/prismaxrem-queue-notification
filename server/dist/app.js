@@ -20,7 +20,8 @@ const allowedOrigins = [
     'https://app.prismax.ai',
     'https://prismax.ai',
     'http://localhost:3001',
-    'http://app.prismaxreminder.xyz'
+    'https://app.prismaxreminder.xyz',
+    'https://prismaxrem-queue-notification.vercel.app'
 ];
 app.use((0, cors_1.default)({
     origin: function (origin, callback) {
@@ -80,4 +81,3 @@ const startServer = async () => {
 };
 startServer();
 exports.default = app;
-//# sourceMappingURL=app.js.map

@@ -167,6 +167,37 @@ class QueueController {
             });
         }
     }
+    async getNotificationStats(req, res) {
+        try {
+            const totalResult = await database_1.default.query(`SELECT COUNT(*) as total_notifications_sent FROM notification_logs WHERE email_status = 'sent'`);
+            const todayResult = await database_1.default.query(`SELECT COUNT(*) as notifications_today FROM notification_logs 
+         WHERE email_status = 'sent' AND DATE(sent_at) = CURRENT_DATE`);
+            const methodResult = await database_1.default.query(`SELECT 
+           notification_method,
+           COUNT(*) as count
+         FROM notification_logs 
+         WHERE email_status = 'sent' 
+         GROUP BY notification_method`);
+            const stats = {
+                totalNotificationsSent: parseInt(totalResult.rows[0]?.total_notifications_sent || '0'),
+                notificationsToday: parseInt(todayResult.rows[0]?.notifications_today || '0'),
+                notificationsByMethod: methodResult.rows.reduce((acc, row) => {
+                    acc[row.notification_method] = parseInt(row.count);
+                    return acc;
+                }, {})
+            };
+            res.json({
+                success: true,
+                stats
+            });
+        }
+        catch (error) {
+            console.error('Get notification stats error:', error);
+            res.status(500).json({
+                error: 'Failed to get notification statistics',
+                message: error.message
+            });
+        }
+    }
 }
 exports.QueueController = QueueController;
-//# sourceMappingURL=queueController.js.map

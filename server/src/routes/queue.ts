@@ -9,6 +9,9 @@ router.post('/update', queueController.updateQueueStatus.bind(queueController));
 router.get('/current', queueController.getCurrentQueueStatus.bind(queueController));
 router.get('/history', queueController.getQueueHistory.bind(queueController));
 
+// Statistics endpoints
+router.get('/stats/notifications', queueController.getNotificationStats.bind(queueController));
+
 // Admin/testing endpoints
 router.post('/reset-notifications', queueController.resetNotifications.bind(queueController));
 

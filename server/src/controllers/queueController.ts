@@ -228,4 +228,51 @@ export class QueueController {
       });
     }
   }
+
+  // Get notification statistics for dashboard
+  public async getNotificationStats(req: Request, res: Response): Promise<Response | void> {
+    try {
+      // Get total notifications sent from notification_logs table
+      const totalResult = await pool.query(
+        `SELECT COUNT(*) as total_notifications_sent FROM notification_logs WHERE email_status = 'sent'`
+      );
+
+      // Get notifications sent today
+      const todayResult = await pool.query(
+        `SELECT COUNT(*) as notifications_today FROM notification_logs 
+         WHERE email_status = 'sent' AND DATE(sent_at) = CURRENT_DATE`
+      );
+
+      // Get notifications by method (email vs telegram)
+      const methodResult = await pool.query(
+        `SELECT 
+           notification_method,
+           COUNT(*) as count
+         FROM notification_logs 
+         WHERE email_status = 'sent' 
+         GROUP BY notification_method`
+      );
+
+      const stats = {
+        totalNotificationsSent: parseInt(totalResult.rows[0]?.total_notifications_sent || '0'),
+        notificationsToday: parseInt(todayResult.rows[0]?.notifications_today || '0'),
+        notificationsByMethod: methodResult.rows.reduce((acc: any, row: any) => {
+          acc[row.notification_method] = parseInt(row.count);
+          return acc;
+        }, {})
+      };
+
+      res.json({ 
+        success: true, 
+        stats
+      });
+
+    } catch (error: any) {
+      console.error('Get notification stats error:', error);
+      res.status(500).json({ 
+        error: 'Failed to get notification statistics',
+        message: error.message
+      });
+    }
+  }
 }

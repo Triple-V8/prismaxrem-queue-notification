@@ -7,6 +7,6 @@ const queueController = new queueController_1.QueueController();
 router.post('/update', queueController.updateQueueStatus.bind(queueController));
 router.get('/current', queueController.getCurrentQueueStatus.bind(queueController));
 router.get('/history', queueController.getQueueHistory.bind(queueController));
+router.get('/stats/notifications', queueController.getNotificationStats.bind(queueController));
 router.post('/reset-notifications', queueController.resetNotifications.bind(queueController));
 exports.default = router;
-//# sourceMappingURL=queue.js.map

@@ -323,4 +323,3 @@ class UserController {
     }
 }
 exports.default = new UserController();
-//# sourceMappingURL=userController.js.map
