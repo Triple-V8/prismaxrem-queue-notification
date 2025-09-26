@@ -1,4 +1,7 @@
 {
+  "framework": "create-react-app",
+  "buildCommand": "cd client && npm run build",
+  "outputDirectory": "client/build",
   "rewrites": [
     {
       "source": "/(.*)",
