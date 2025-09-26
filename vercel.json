@@ -1,18 +1,8 @@
 {
-  "version": 2,
-  "buildCommand": "cd client && npm run build",
-  "outputDirectory": "client/build",
-  "routes": [
+  "rewrites": [
     {
-      "src": "/static/(.*)",
-      "dest": "/static/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
-  ],
-  "env": {
-    "REACT_APP_API_URL": "https://prismaxrem-api.onrender.com/api"
-  }
+  ]
 }
