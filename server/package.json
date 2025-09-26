@@ -2,11 +2,12 @@
   "name": "reminder-app-server",
   "version": "1.0.0",
   "description": "Backend server for the reminder application that notifies users when it's their turn in the queue for teleoperating a robotic arm.",
-  "main": "src/app.ts",
+  "main": "dist/app.js",
   "scripts": {
-    "start": "ts-node src/app.ts",
+    "start": "node dist/app.js",
     "dev": "nodemon src/app.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "postinstall": "npm run build"
   },
   "dependencies": {
     "@types/node-telegram-bot-api": "^0.64.11",
@@ -32,6 +33,6 @@
     "typescript": "^5.2.2"
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=18.0.0"
   }
 }

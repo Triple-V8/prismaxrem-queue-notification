@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: prismaxrem-api
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+    rootDir: ./server
+
+databases:
+  - name: prismaxrem-db
+    databaseName: prismaxrem
+    user: prismaxrem_user
+    plan: free
