@@ -243,23 +243,33 @@ export class QueueController {
          WHERE email_status = 'sent' AND DATE(sent_at) = CURRENT_DATE`
       );
 
-      // Get notifications by method (email vs telegram)
-      const methodResult = await pool.query(
-        `SELECT 
-           notification_method,
-           COUNT(*) as count
-         FROM notification_logs 
-         WHERE email_status = 'sent' 
-         GROUP BY notification_method`
-      );
+      // Check if notification_method column exists before querying it
+      let notificationsByMethod = {};
+      try {
+        const methodResult = await pool.query(
+          `SELECT 
+             notification_method,
+             COUNT(*) as count
+           FROM notification_logs 
+           WHERE email_status = 'sent' 
+           GROUP BY notification_method`
+        );
+        
+        notificationsByMethod = methodResult.rows.reduce((acc: any, row: any) => {
+          acc[row.notification_method] = parseInt(row.count);
+          return acc;
+        }, {});
+      } catch (columnError: any) {
+        // If notification_method column doesn't exist, assume all are email notifications
+        console.log('notification_method column not found, assuming all notifications are email');
+        const totalCount = parseInt(totalResult.rows[0]?.total_notifications_sent || '0');
+        notificationsByMethod = totalCount > 0 ? { email: totalCount } : {};
+      }
 
       const stats = {
         totalNotificationsSent: parseInt(totalResult.rows[0]?.total_notifications_sent || '0'),
         notificationsToday: parseInt(todayResult.rows[0]?.notifications_today || '0'),
-        notificationsByMethod: methodResult.rows.reduce((acc: any, row: any) => {
-          acc[row.notification_method] = parseInt(row.count);
-          return acc;
-        }, {})
+        notificationsByMethod
       };
 
       res.json({ 
