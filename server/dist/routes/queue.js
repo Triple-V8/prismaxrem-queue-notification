@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const queueController_1 = require("../controllers/queueController");
+const router = (0, express_1.Router)();
+const queueController = new queueController_1.QueueController();
+router.post('/update', queueController.updateQueueStatus.bind(queueController));
+router.get('/current', queueController.getCurrentQueueStatus.bind(queueController));
+router.get('/history', queueController.getQueueHistory.bind(queueController));
+router.post('/reset-notifications', queueController.resetNotifications.bind(queueController));
+exports.default = router;
+//# sourceMappingURL=queue.js.map
