@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 350px;
+      min-height: 400px;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    
+    .container {
+      padding: 20px;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    
+    .header h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .header p {
+      margin: 5px 0 0;
+      font-size: 12px;
+      opacity: 0.8;
+    }
+    
+    .status-card {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 15px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .status-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .status-item:last-child {
+      margin-bottom: 0;
+    }
+    
+    .status-label {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+    
+    .status-value {
+      font-weight: 600;
+      font-size: 14px;
+      text-align: right;
+      flex: 1;
+      margin-left: 10px;
+    }
+    
+    .queue-pattern {
+      font-family: 'Courier New', monospace;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    
+    .button {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 10px;
+      transition: all 0.2s;
+    }
+    
+    .button-primary {
+      background: #4CAF50;
+      color: white;
+    }
+    
+    .button-primary:hover {
+      background: #45a049;
+    }
+    
+    .button-secondary {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .button-secondary:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    
+    .button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
+    .monitoring-status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 15px;
+    }
+    
+    .monitoring-active {
+      background: rgba(76, 175, 80, 0.3);
+      border: 1px solid #4CAF50;
+    }
+    
+    .monitoring-inactive {
+      background: rgba(255, 87, 34, 0.3);
+      border: 1px solid #FF5722;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 20px;
+      opacity: 0.8;
+    }
+    
+    .error {
+      background: rgba(244, 67, 54, 0.3);
+      border: 1px solid #F44336;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      margin-bottom: 15px;
+    }
+    
+    .footer {
+      text-align: center;
+      font-size: 10px;
+      opacity: 0.6;
+      margin-top: 20px;
+    }
+    
+    .indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
+    }
+    
+    .indicator-green {
+      background: #4CAF50;
+    }
+    
+    .indicator-red {
+      background: #F44336;
+    }
+    
+    .indicator-orange {
+      background: #FF9800;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎯 PrismaX Queue Monitor</h1>
+      <p>Real-time robotic arm queue tracking</p>
+    </div>
+    
+    <div id="loading" class="loading">
+      <div>Loading...</div>
+    </div>
+    
+    <div id="content" style="display: none;">
+      <div id="monitoringStatus" class="monitoring-status">
+        <span class="indicator"></span>
+        <span id="statusText">Checking status...</span>
+      </div>
+      
+      <div id="error" class="error" style="display: none;">
+        <div id="errorMessage"></div>
+      </div>
+      
+      <div class="status-card">
+        <div class="status-item">
+          <span class="status-label">Current User:</span>
+          <span id="currentUser" class="status-value">-</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">Last Update:</span>
+          <span id="lastUpdate" class="status-value">-</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">Page URL:</span>
+          <span id="pageUrl" class="status-value">-</span>
+        </div>
+      </div>
+      
+      <button id="toggleBtn" class="button button-primary">
+        Toggle Monitoring
+      </button>
+      
+      <button id="forceCheckBtn" class="button button-secondary">
+        Force Check Now
+      </button>
+      
+      <button id="openDashboardBtn" class="button button-secondary">
+        Open Dashboard
+      </button>
+      
+      <div class="footer">
+        <div>Made for PrismaX AI • v1.0.0</div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

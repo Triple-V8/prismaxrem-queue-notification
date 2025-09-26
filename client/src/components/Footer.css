@@ -1,0 +1,195 @@
+/* Footer Component Styles */
+.footer {
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+    border-top: 1px solid var(--border-color);
+    padding: 32px 24px 24px;
+    margin-top: 48px;
+    text-align: center;
+}
+
+.footer-content {
+    max-width: 600px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.tip-section {
+    background: var(--bg-card);
+    border: 2px solid var(--accent-color);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.tip-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.tip-icon {
+    font-size: 24px;
+    animation: bounce 2s infinite;
+}
+
+.tip-text {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--accent-color);
+}
+
+.tip-address-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+}
+
+.tip-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.address-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 12px;
+    transition: all 0.3s ease;
+}
+
+.address-wrapper:hover {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+}
+
+.tip-address {
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 14px;
+    color: var(--text-primary);
+    background: transparent;
+    border: none;
+    padding: 0;
+    user-select: all;
+}
+
+.copy-btn {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.3s ease;
+    min-width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.copy-btn:hover {
+    background: var(--accent-hover);
+    transform: scale(1.05);
+}
+
+.copy-btn.copied {
+    background: #10b981;
+    transform: scale(1.1);
+}
+
+.copy-success {
+    font-size: 12px;
+    color: #10b981;
+    font-weight: 500;
+    animation: fadeInOut 2s ease;
+}
+
+.made-with-love {
+    font-size: 16px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.made-with-love strong {
+    color: var(--accent-color);
+    font-weight: 700;
+}
+
+.footer-info {
+    font-size: 14px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.separator {
+    opacity: 0.6;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-10px);
+    }
+    60% {
+        transform: translateY(-5px);
+    }
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: translateY(10px); }
+    50% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-10px); }
+}
+
+@media (max-width: 768px) {
+    .footer {
+        padding: 24px 16px 20px;
+        margin-top: 32px;
+    }
+
+    .footer-content {
+        gap: 20px;
+    }
+
+    .tip-section {
+        padding: 16px;
+    }
+
+    .tip-text {
+        font-size: 16px;
+    }
+
+    .address-wrapper {
+        flex-direction: row;
+        gap: 8px;
+        text-align: center;
+        justify-content: center;
+    }
+
+    .footer-info {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .separator {
+        display: none;
+    }
+}
