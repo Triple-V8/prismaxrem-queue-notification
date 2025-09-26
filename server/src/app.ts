@@ -23,7 +23,7 @@ const allowedOrigins = [
   'https://prismax.ai',           // PrismaX AI main domain
   'http://localhost:3001',         // Self-reference for health checks
   'https://app.prismaxreminder.xyz',
-  'https://prismaxrem-queue-notification.vercel.app/'
+  'https://prismaxrem-queue-notification.vercel.app'
 ];
 
 app.use(cors({
