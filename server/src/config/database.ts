@@ -3,16 +3,33 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const poolConfig: PoolConfig = {
-  user: process.env.DB_USER || 'postgres',
-  host: process.env.DB_HOST || 'localhost',
-  database: process.env.DB_NAME || 'reminder_app',
-  password: process.env.DB_PASSWORD || 'password',
-  port: Number(process.env.DB_PORT) || 5432,
-  max: 20, // Maximum number of connections in the pool
-  idleTimeoutMillis: 30000, // Close idle connections after 30 seconds
-  connectionTimeoutMillis: 2000, // Return error if connection takes longer than 2 seconds
+// Check if we have a DATABASE_URL (production) or individual env vars (development)
+const getDatabaseConfig = (): PoolConfig => {
+  // If we have DATABASE_URL (Render, Heroku, etc.), use it
+  if (process.env.DATABASE_URL) {
+    return {
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+    };
+  }
+
+  // Otherwise use individual environment variables (local development)
+  return {
+    user: process.env.DB_USER || 'postgres',
+    host: process.env.DB_HOST || 'localhost',
+    database: process.env.DB_NAME || 'reminder_app',
+    password: process.env.DB_PASSWORD || 'password',
+    port: Number(process.env.DB_PORT) || 5432,
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+  };
 };
+
+const poolConfig = getDatabaseConfig();
 
 const pool = new Pool(poolConfig);
 
