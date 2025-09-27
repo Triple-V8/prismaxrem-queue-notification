@@ -38,11 +38,30 @@ export class QueueController {
         [currentUserPattern, rawContent || '']
       );
 
+      // Reset notification status for users who are no longer in the queue
+      // This allows them to be notified again when they rejoin (respecting 30-min cooldown)
+      await pool.query(
+        `UPDATE users 
+         SET notified = false 
+         WHERE (UPPER(username_pattern) != UPPER($1) AND UPPER(COALESCE(alternative_pattern, '')) != UPPER($1))
+         AND notified = true`,
+        [currentUserPattern]
+      );
+      
+      console.log(`🔄 Reset notification status for users not matching pattern: ${currentUserPattern}`);
+
       // Check if any users match this pattern (primary or alternative) and need notification - case insensitive
+      // Include 30-minute cooldown to prevent spam
       const usersResult = await pool.query(
-        `SELECT id, username, email, notified, telegram_username, telegram_chat_id, username_pattern, alternative_pattern
+        `SELECT id, username, email, notified, telegram_username, telegram_chat_id, username_pattern, alternative_pattern, last_notified
          FROM users 
-         WHERE (UPPER(username_pattern) = UPPER($1) OR UPPER(alternative_pattern) = UPPER($1)) AND is_active = true`,
+         WHERE (UPPER(username_pattern) = UPPER($1) OR UPPER(alternative_pattern) = UPPER($1)) 
+         AND is_active = true
+         AND (
+           notified = false 
+           OR last_notified IS NULL 
+           OR last_notified < NOW() - INTERVAL '30 minutes'
+         )`,
         [currentUserPattern]
       );
 
@@ -54,12 +73,15 @@ export class QueueController {
         console.log(`🎯 Found ${usersResult.rows.length} matching user(s) for pattern: ${currentUserPattern}`);
         
         for (const user of usersResult.rows) {
-          // Only notify if not already notified
-          if (!user.notified) {
-            console.log(`📧 Processing notification for: ${user.username} (${user.email})`);
-            
-            // Check if we haven't already sent to this email address
-            if (!uniqueEmails.has(user.email)) {
+          // Check cooldown period - user passed the query filter so they're eligible for notification
+          const now = new Date();
+          const lastNotified = user.last_notified ? new Date(user.last_notified) : null;
+          const timeSinceLastNotification = lastNotified ? (now.getTime() - lastNotified.getTime()) / (1000 * 60) : Infinity;
+          
+          console.log(`📧 Processing notification for: ${user.username} (${user.email}) - Last notified: ${timeSinceLastNotification.toFixed(1)} minutes ago`);
+          
+          // Check if we haven't already sent to this email address in this batch
+          if (!uniqueEmails.has(user.email)) {
               try {
                 // Send email notification
                 await this.notificationService.sendQueueNotification(
@@ -98,9 +120,9 @@ export class QueueController {
               console.log(`ℹ️  User ${user.username} has Telegram username but no chat ID - they need to message the bot first`);
             }
 
-            // Mark this specific user as notified regardless of email success
+            // Mark this specific user as notified with timestamp
             await pool.query(
-              `UPDATE users SET notified = true, updated_at = CURRENT_TIMESTAMP 
+              `UPDATE users SET notified = true, last_notified = NOW(), updated_at = CURRENT_TIMESTAMP 
                WHERE id = $1`,
               [user.id]
             );
@@ -112,7 +134,7 @@ export class QueueController {
               [user.id]
             );
           } else {
-            console.log(`⚠️  User ${user.username} (${user.email}) already notified`);
+            console.log(`ℹ️  Email already sent to ${user.email} for another username with same pattern in this batch`);
           }
         }
         
@@ -213,17 +235,56 @@ export class QueueController {
   // Reset notification status for testing
   public async resetNotifications(req: Request, res: Response): Promise<Response | void> {
     try {
-      await pool.query(`UPDATE users SET notified = false`);
+      await pool.query(`UPDATE users SET notified = false, last_notified = NULL`);
       
       res.json({ 
         success: true, 
-        message: 'All notification statuses reset' 
+        message: 'All notification statuses and cooldowns reset' 
       });
 
     } catch (error: any) {
       console.error('Reset notifications error:', error);
       res.status(500).json({ 
         error: 'Failed to reset notifications',
+        message: error.message
+      });
+    }
+  }
+
+  // Reset notification status for users who left the queue
+  public async resetNotificationForInactiveUsers(req: Request, res: Response): Promise<Response | void> {
+    try {
+      const { currentUserPattern } = req.body;
+      
+      if (!currentUserPattern) {
+        return res.status(400).json({ 
+          error: 'currentUserPattern is required' 
+        });
+      }
+
+      // Reset notified status for users not currently in queue (keep last_notified for cooldown)
+      const result = await pool.query(
+        `UPDATE users 
+         SET notified = false 
+         WHERE (UPPER(username_pattern) != UPPER($1) AND UPPER(COALESCE(alternative_pattern, '')) != UPPER($1))
+         AND notified = true
+         RETURNING id, username, username_pattern`,
+        [currentUserPattern]
+      );
+      
+      console.log(`🔄 Reset notification status for ${result.rows.length} users who left the queue`);
+      
+      res.json({ 
+        success: true, 
+        message: `Reset notification status for ${result.rows.length} users`,
+        usersReset: result.rows.length,
+        currentUserPattern
+      });
+
+    } catch (error: any) {
+      console.error('Reset inactive notifications error:', error);
+      res.status(500).json({ 
+        error: 'Failed to reset inactive notifications',
         message: error.message
       });
     }
@@ -281,6 +342,50 @@ export class QueueController {
       console.error('Get notification stats error:', error);
       res.status(500).json({ 
         error: 'Failed to get notification statistics',
+        message: error.message
+      });
+    }
+  }
+
+  // Force reset cooldowns for specific users (admin/testing)
+  public async resetCooldowns(req: Request, res: Response): Promise<Response | void> {
+    try {
+      const { userIds } = req.body;
+      
+      if (userIds && Array.isArray(userIds)) {
+        // Reset specific users
+        const result = await pool.query(
+          `UPDATE users 
+           SET notified = false, last_notified = NULL 
+           WHERE id = ANY($1::int[])
+           RETURNING id, username`,
+          [userIds]
+        );
+        
+        res.json({
+          success: true,
+          message: `Reset cooldowns for ${result.rows.length} specific users`,
+          usersReset: result.rows
+        });
+      } else {
+        // Reset all users
+        const result = await pool.query(
+          `UPDATE users 
+           SET notified = false, last_notified = NULL 
+           RETURNING COUNT(*) as count`
+        );
+        
+        res.json({
+          success: true,
+          message: 'Reset cooldowns for all users',
+          usersReset: result.rows[0].count
+        });
+      }
+
+    } catch (error: any) {
+      console.error('Reset cooldowns error:', error);
+      res.status(500).json({ 
+        error: 'Failed to reset cooldowns',
         message: error.message
       });
     }

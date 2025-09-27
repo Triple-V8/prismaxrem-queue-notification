@@ -14,5 +14,6 @@ router.get('/stats/notifications', queueController.getNotificationStats.bind(que
 
 // Admin/testing endpoints
 router.post('/reset-notifications', queueController.resetNotifications.bind(queueController));
+router.post('/reset-inactive-notifications', queueController.resetNotificationForInactiveUsers.bind(queueController));
 
 export default router;
