@@ -17,7 +17,7 @@ interface User {
 }
 
 class UserController {
-  // Convert username to pattern (abcd..ijk format)
+  // Convert username to pattern (first 4 + last 3 format: abcd..xyz)
   private generateUsernamePattern(username: string): string {
     if (username.length < 7) {
       throw new Error('Username must be at least 7 characters long');
@@ -28,15 +28,16 @@ class UserController {
     return `${firstFour}..${lastThree}`;
   }
 
-  // Generate alternative pattern with last 4 characters (abcd..ijkl format)
-  private generateAlternativePattern(username: string): string {
+  // Generate alternative pattern (first 4 + second-to-last 3 format: abcd..uvw)
+  private generateAlternativePattern(username: string): string | null {
     if (username.length < 7) {
-      throw new Error('Username must be at least 7 characters long');
+      return null;
     }
     
     const firstFour = username.substring(0, 4);
-    const lastFour = username.substring(username.length - 4);
-    return `${firstFour}..${lastFour}`;
+    // Get 3 characters ending at second-to-last position
+    const secondToLastThree = username.substring(username.length - 4, username.length - 1);
+    return `${firstFour}..${secondToLastThree}`;
   }
 
   registerUser = async (req: Request, res: Response) => {

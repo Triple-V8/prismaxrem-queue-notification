@@ -1,6 +1,6 @@
 import Joi from 'joi';
 
-export interface UserRegistrationData {
+interface UserRegistrationData {
   username: string;
   email: string;
 }
@@ -34,7 +34,7 @@ export const validateQueueUpdate = (data: any) => {
       .pattern(/^[a-zA-Z0-9]{4}\.\.[a-zA-Z0-9]{3}$/)
       .required()
       .messages({
-        'string.pattern.base': 'Invalid username pattern format. Expected: abcd..xyz',
+        'string.pattern.base': 'Invalid username pattern format. Expected: abcd..xyz (4 chars + .. + 3 chars)',
         'any.required': 'Current user pattern is required'
       }),
     rawContent: Joi.string().optional(),

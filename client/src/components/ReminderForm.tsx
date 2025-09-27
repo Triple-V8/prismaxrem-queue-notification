@@ -74,8 +74,8 @@ const ReminderForm: React.FC = () => {
 
   const generateAlternativePattern = (username: string): string => {
     if (username.length < 7) return '';
-    // Generate alternative pattern with last 4 characters instead of 3
-    return `${username.substring(0, 4)}..${username.substring(username.length - 4)}`;
+    // Get 3 characters starting from position (length-4) - this gives us the second-to-last 3 chars
+    return `${username.substring(0, 4)}..${username.substring(username.length - 4, username.length - 1)}`;
   };
 
   const validateForm = (): boolean => {
@@ -165,7 +165,9 @@ const ReminderForm: React.FC = () => {
           <div className="success-message">
             <h2>Registration Successful!</h2>
             <p>You'll receive email notifications when it's your turn in the queue.</p>
-            <p><strong>Your queue patterns:</strong> <code>{usernamePattern}</code> or <code>{alternativePattern}</code></p>
+            <p><strong>Your queue patterns:</strong></p>
+            <p>Primary: <code>{usernamePattern}</code></p>
+            {alternativePattern && <p>Alternative: <code>{alternativePattern}</code></p>}
             
             
             {formData.telegramUsername && (
@@ -344,7 +346,10 @@ const ReminderForm: React.FC = () => {
           {errors.username && <span className="error-text">{errors.username}</span>}
           {usernamePattern && (
             <div className="pattern-preview">
-              <small>Queue patterns: <code>{usernamePattern}</code> or <code>{alternativePattern}</code></small>
+              <small>Primary pattern: <code>{usernamePattern}</code></small>
+              {alternativePattern && (
+                <small style={{display: 'block', marginTop: '2px'}}>Alternative pattern: <code>{alternativePattern}</code></small>
+              )}
             </div>
           )}
         </div>
