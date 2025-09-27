@@ -82,60 +82,57 @@ export class QueueController {
           
           // Check if we haven't already sent to this email address in this batch
           if (!uniqueEmails.has(user.email)) {
-              try {
-                // Send email notification
-                await this.notificationService.sendQueueNotification(
-                  user.email, 
-                  user.username,
-                  currentUserPattern
-                );
+            try {
+              // Send email notification
+              await this.notificationService.sendQueueNotification(
+                user.email, 
+                user.username,
+                currentUserPattern
+              );
 
-                uniqueEmails.add(user.email);
-                emailsSent.push(user.email);
-                notificationsSent++;
-                
-                console.log(`✅ Email notification sent to ${user.email} for user ${user.username}`);
-              } catch (emailError) {
-                console.error(`❌ Failed to send email to ${user.email}:`, emailError);
-              }
-            } else {
-              console.log(`ℹ️  Email already sent to ${user.email} for another username with same pattern`);
+              uniqueEmails.add(user.email);
+              emailsSent.push(user.email);
+              notificationsSent++;
+              
+              console.log(`✅ Email notification sent to ${user.email} for user ${user.username}`);
+            } catch (emailError) {
+              console.error(`❌ Failed to send email to ${user.email}:`, emailError);
             }
-
-            // Send Telegram notifications if user has Telegram enabled
-            if (user.telegram_chat_id) {
-              try {
-                console.log(`📱 Sending Telegram notifications to ${user.username} (${user.telegram_username})`);
-                await telegramBotService.sendSuccessiveNotifications(
-                  user.telegram_chat_id,
-                  user.username,
-                  user.telegram_username || user.username,
-                  currentUserPattern
-                );
-                console.log(`✅ Telegram notifications sent to ${user.username}`);
-              } catch (telegramError) {
-                console.error(`❌ Failed to send Telegram notifications to ${user.username}:`, telegramError);
-              }
-            } else if (user.telegram_username) {
-              console.log(`ℹ️  User ${user.username} has Telegram username but no chat ID - they need to message the bot first`);
-            }
-
-            // Mark this specific user as notified with timestamp
-            await pool.query(
-              `UPDATE users SET notified = true, last_notified = NOW(), updated_at = CURRENT_TIMESTAMP 
-               WHERE id = $1`,
-              [user.id]
-            );
-
-            // Log notification attempt
-            await pool.query(
-              `INSERT INTO notification_logs (user_id, notification_type, email_status) 
-               VALUES ($1, 'queue_notification', 'sent')`,
-              [user.id]
-            );
           } else {
-            console.log(`ℹ️  Email already sent to ${user.email} for another username with same pattern in this batch`);
+            console.log(`ℹ️  Email already sent to ${user.email} for another username with same pattern`);
           }
+
+          // Send Telegram notifications if user has Telegram enabled
+          if (user.telegram_chat_id) {
+            try {
+              console.log(`📱 Sending Telegram notifications to ${user.username} (${user.telegram_username})`);
+              await telegramBotService.sendSuccessiveNotifications(
+                user.telegram_chat_id,
+                user.username,
+                user.telegram_username || user.username,
+                currentUserPattern
+              );
+              console.log(`✅ Telegram notifications sent to ${user.username}`);
+            } catch (telegramError) {
+              console.error(`❌ Failed to send Telegram notifications to ${user.username}:`, telegramError);
+            }
+          } else if (user.telegram_username) {
+            console.log(`ℹ️  User ${user.username} has Telegram username but no chat ID - they need to message the bot first`);
+          }
+
+          // Mark this specific user as notified with timestamp
+          await pool.query(
+            `UPDATE users SET notified = true, last_notified = NOW(), updated_at = CURRENT_TIMESTAMP 
+             WHERE id = $1`,
+            [user.id]
+          );
+
+          // Log notification attempt
+          await pool.query(
+            `INSERT INTO notification_logs (user_id, notification_type, email_status) 
+             VALUES ($1, 'queue_notification', 'sent')`,
+            [user.id]
+          );
         }
         
         if (notificationsSent > 0) {
