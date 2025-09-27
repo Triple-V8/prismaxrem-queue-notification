@@ -31,7 +31,7 @@ export const validateUserRegistration = (data: UserRegistrationData) => {
 export const validateQueueUpdate = (data: any) => {
   const schema = Joi.object({
     currentUserPattern: Joi.string()
-      .pattern(/^[a-zA-Z0-9]{4}\.\.[a-zA-Z0-9]{3}$/)
+      .pattern(/^[a-zA-Z0-9]{4}\.\.[a-zA-Z0-9]{3}$/i)
       .required()
       .messages({
         'string.pattern.base': 'Invalid username pattern format. Expected: abcd..xyz (4 chars + .. + 3 chars)',

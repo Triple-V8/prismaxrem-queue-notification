@@ -64,9 +64,9 @@ class UserController {
       const usernamePattern = this.generateUsernamePattern(username);
       const alternativePattern = this.generateAlternativePattern(username);
 
-      // Check if this specific username already exists (username must still be unique globally)
+      // Check if this specific username already exists (username must still be unique globally) - case insensitive
       const existingUsername = await pool.query(
-        'SELECT id FROM users WHERE username = $1',
+        'SELECT id FROM users WHERE LOWER(username) = LOWER($1)',
         [username]
       );
 
@@ -76,9 +76,9 @@ class UserController {
         });
       }
 
-      // Check if this username-email combination already exists
+      // Check if this username-email combination already exists - case insensitive
       const existingCombination = await pool.query(
-        'SELECT id FROM users WHERE username = $1 AND email = $2',
+        'SELECT id FROM users WHERE LOWER(username) = LOWER($1) AND LOWER(email) = LOWER($2)',
         [username, email.toLowerCase()]
       );
 
@@ -98,7 +98,7 @@ class UserController {
         console.log(`🔍 Checking for existing chat_id for Telegram username: ${cleanTelegramUsername}`);
         
         const existingTelegramUser = await pool.query(
-          'SELECT telegram_chat_id FROM users WHERE telegram_username = $1 AND telegram_chat_id IS NOT NULL ORDER BY created_at DESC LIMIT 1',
+          'SELECT telegram_chat_id FROM users WHERE LOWER(telegram_username) = LOWER($1) AND telegram_chat_id IS NOT NULL ORDER BY created_at DESC LIMIT 1',
           [cleanTelegramUsername]
         );
 
@@ -261,7 +261,7 @@ class UserController {
       const result = await pool.query(
         `SELECT id, username, email, is_active, notified 
          FROM users 
-         WHERE username_pattern = $1 AND is_active = true
+         WHERE UPPER(username_pattern) = UPPER($1) AND is_active = true
          ORDER BY created_at ASC`,
         [pattern]
       );
@@ -300,7 +300,7 @@ class UserController {
       const result = await pool.query(
         `SELECT id, username, username_pattern, email, is_active, notified, created_at 
          FROM users 
-         WHERE email = $1
+         WHERE LOWER(email) = LOWER($1)
          ORDER BY created_at ASC`,
         [email]
       );

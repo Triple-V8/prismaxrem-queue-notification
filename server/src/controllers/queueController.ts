@@ -38,11 +38,11 @@ export class QueueController {
         [currentUserPattern, rawContent || '']
       );
 
-      // Check if any users match this pattern (primary or alternative) and need notification
+      // Check if any users match this pattern (primary or alternative) and need notification - case insensitive
       const usersResult = await pool.query(
         `SELECT id, username, email, notified, telegram_username, telegram_chat_id, username_pattern, alternative_pattern
          FROM users 
-         WHERE (username_pattern = $1 OR alternative_pattern = $1) AND is_active = true`,
+         WHERE (UPPER(username_pattern) = UPPER($1) OR UPPER(alternative_pattern) = UPPER($1)) AND is_active = true`,
         [currentUserPattern]
       );
 
