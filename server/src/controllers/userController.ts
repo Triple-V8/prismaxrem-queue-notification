@@ -28,6 +28,17 @@ class UserController {
     return `${firstFour}..${lastThree}`;
   }
 
+  // Generate alternative pattern with last 4 characters (abcd..ijkl format)
+  private generateAlternativePattern(username: string): string {
+    if (username.length < 7) {
+      throw new Error('Username must be at least 7 characters long');
+    }
+    
+    const firstFour = username.substring(0, 4);
+    const lastFour = username.substring(username.length - 4);
+    return `${firstFour}..${lastFour}`;
+  }
+
   registerUser = async (req: Request, res: Response) => {
     const { username, email, telegramUsername } = req.body;
     
@@ -48,8 +59,9 @@ class UserController {
         });
       }
 
-      // Generate username pattern
+      // Generate username patterns
       const usernamePattern = this.generateUsernamePattern(username);
+      const alternativePattern = this.generateAlternativePattern(username);
 
       // Check if this specific username already exists (username must still be unique globally)
       const existingUsername = await pool.query(
@@ -99,10 +111,10 @@ class UserController {
 
       // Insert new user with existing chat_id if available
       const result = await pool.query(
-        `INSERT INTO users (username, username_pattern, email, telegram_username, telegram_chat_id) 
-         VALUES ($1, $2, $3, $4, $5) 
-         RETURNING id, username, username_pattern, email, telegram_username, telegram_chat_id, is_active, created_at`,
-        [username, usernamePattern, email.toLowerCase(), cleanTelegramUsername, existingChatId]
+        `INSERT INTO users (username, username_pattern, alternative_pattern, email, telegram_username, telegram_chat_id) 
+         VALUES ($1, $2, $3, $4, $5, $6) 
+         RETURNING id, username, username_pattern, alternative_pattern, email, telegram_username, telegram_chat_id, is_active, created_at`,
+        [username, usernamePattern, alternativePattern, email.toLowerCase(), cleanTelegramUsername, existingChatId]
       );
 
       const newUser = result.rows[0];

@@ -25,6 +25,7 @@ const ReminderForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [usernamePattern, setUsernamePattern] = useState('');
+  const [alternativePattern, setAlternativePattern] = useState('');
 
     const [copiedEth, setCopiedEth] = useState(false);
     const [copiedSol, setCopiedSol] = useState(false);
@@ -71,6 +72,12 @@ const ReminderForm: React.FC = () => {
     return `${username.substring(0, 4)}..${username.substring(username.length - 3)}`;
   };
 
+  const generateAlternativePattern = (username: string): string => {
+    if (username.length < 7) return '';
+    // Generate alternative pattern with last 4 characters instead of 3
+    return `${username.substring(0, 4)}..${username.substring(username.length - 4)}`;
+  };
+
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
@@ -105,6 +112,7 @@ const ReminderForm: React.FC = () => {
     // Update username pattern preview
     if (field === 'username') {
       setUsernamePattern(generatePattern(value));
+      setAlternativePattern(generateAlternativePattern(value));
     }
 
     // Clear errors when user starts typing
@@ -157,7 +165,7 @@ const ReminderForm: React.FC = () => {
           <div className="success-message">
             <h2>Registration Successful!</h2>
             <p>You'll receive email notifications when it's your turn in the queue.</p>
-            <p><strong>Your queue pattern:</strong> <code>{usernamePattern}</code></p>
+            <p><strong>Your queue patterns:</strong> <code>{usernamePattern}</code> or <code>{alternativePattern}</code></p>
             
             
             {formData.telegramUsername && (
@@ -336,7 +344,7 @@ const ReminderForm: React.FC = () => {
           {errors.username && <span className="error-text">{errors.username}</span>}
           {usernamePattern && (
             <div className="pattern-preview">
-              <small>Queue pattern: <code>{usernamePattern}</code></small>
+              <small>Queue patterns: <code>{usernamePattern}</code> or <code>{alternativePattern}</code></small>
             </div>
           )}
         </div>
