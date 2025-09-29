@@ -6,6 +6,11 @@ import { validateQueueUpdate } from '../services/validationService';
 
 interface QueueUpdate {
   currentUserPattern: string;
+  topUsers?: Array<{
+    position: number;
+    userPattern: string;
+    isCurrentUser: boolean;
+  }>;
   rawContent?: string;
   timestamp?: Date;
 }
@@ -20,7 +25,7 @@ export class QueueController {
   // Endpoint for browser extension to update queue status
   public async updateQueueStatus(req: Request, res: Response): Promise<Response | void> {
     try {
-      const { currentUserPattern, rawContent } = req.body;
+      const { currentUserPattern, topUsers, rawContent } = req.body;
 
       // Validate input
       const { error } = validateQueueUpdate({ currentUserPattern, rawContent });
@@ -50,103 +55,193 @@ export class QueueController {
       
       console.log(`🔄 Reset notification status for users not matching pattern: ${currentUserPattern}`);
 
-      // Check if any users match this pattern (primary or alternative) and need notification - case insensitive
-      // Include 30-minute cooldown to prevent spam
-      const usersResult = await pool.query(
-        `SELECT id, username, email, notified, telegram_username, telegram_chat_id, username_pattern, alternative_pattern, last_notified
-         FROM users 
-         WHERE (UPPER(username_pattern) = UPPER($1) OR UPPER(alternative_pattern) = UPPER($1)) 
-         AND is_active = true
-         AND (
-           notified = false 
-           OR last_notified IS NULL 
-           OR last_notified < NOW() - INTERVAL '30 minutes'
-         )`,
-        [currentUserPattern]
-      );
-
+      // Process position-based notifications if topUsers array is provided
       let notificationsSent = 0;
       const emailsSent: string[] = [];
       const uniqueEmails = new Set<string>();
+      let usersFound = 0;
 
-      if (usersResult.rows.length > 0) {
-        console.log(`🎯 Found ${usersResult.rows.length} matching user(s) for pattern: ${currentUserPattern}`);
+      if (topUsers && Array.isArray(topUsers) && topUsers.length > 0) {
+        console.log(`🏆 Processing top ${topUsers.length} users for position-based notifications`);
         
-        for (const user of usersResult.rows) {
-          // Check cooldown period - user passed the query filter so they're eligible for notification
-          const now = new Date();
-          const lastNotified = user.last_notified ? new Date(user.last_notified) : null;
-          const timeSinceLastNotification = lastNotified ? (now.getTime() - lastNotified.getTime()) / (1000 * 60) : Infinity;
+        // Process each position in the top users
+        for (const topUser of topUsers) {
+          const { position, userPattern } = topUser;
           
-          console.log(`📧 Processing notification for: ${user.username} (${user.email}) - Last notified: ${timeSinceLastNotification.toFixed(1)} minutes ago`);
-          
-          // Check if we haven't already sent to this email address in this batch
-          if (!uniqueEmails.has(user.email)) {
-            try {
-              // Send email notification
-              await this.notificationService.sendQueueNotification(
-                user.email, 
-                user.username,
-                currentUserPattern
+          // Find users matching this pattern (case insensitive) with 30-minute cooldown
+          const usersResult = await pool.query(
+            `SELECT id, username, email, notified, telegram_username, telegram_chat_id, username_pattern, alternative_pattern, last_notified
+             FROM users 
+             WHERE (UPPER(username_pattern) = UPPER($1) OR UPPER(alternative_pattern) = UPPER($1)) 
+             AND is_active = true
+             AND (
+               notified = false 
+               OR last_notified IS NULL 
+               OR last_notified < NOW() - INTERVAL '30 minutes'
+             )`,
+            [userPattern]
+          );
+
+          if (usersResult.rows.length > 0) {
+            console.log(`🎯 Position ${position}: Found ${usersResult.rows.length} matching user(s) for pattern: ${userPattern}`);
+            usersFound += usersResult.rows.length;
+            
+            for (const user of usersResult.rows) {
+              const now = new Date();
+              const lastNotified = user.last_notified ? new Date(user.last_notified) : null;
+              const timeSinceLastNotification = lastNotified ? (now.getTime() - lastNotified.getTime()) / (1000 * 60) : Infinity;
+              
+              console.log(`📧 Processing position ${position} notification for: ${user.username} (${user.email}) - Last notified: ${timeSinceLastNotification.toFixed(1)} minutes ago`);
+              
+              // Check if we haven't already sent to this email address in this batch
+              if (!uniqueEmails.has(user.email)) {
+                try {
+                  // Send position-based email notification
+                  await this.notificationService.sendPositionNotification(
+                    user.email, 
+                    user.username,
+                    userPattern,
+                    position
+                  );
+
+                  uniqueEmails.add(user.email);
+                  emailsSent.push(user.email);
+                  notificationsSent++;
+                  
+                  console.log(`✅ Position ${position} email notification sent to ${user.email} for user ${user.username}`);
+                } catch (emailError) {
+                  console.error(`❌ Failed to send position ${position} email to ${user.email}:`, emailError);
+                }
+              } else {
+                console.log(`ℹ️  Email already sent to ${user.email} for another username with same pattern`);
+              }
+
+              // Send Telegram notifications if user has Telegram enabled
+              if (user.telegram_chat_id) {
+                try {
+                  console.log(`📱 Sending position ${position} Telegram notifications to ${user.username} (${user.telegram_username})`);
+                  await telegramBotService.sendPositionNotifications(
+                    user.telegram_chat_id,
+                    user.username,
+                    user.telegram_username || user.username,
+                    userPattern,
+                    position
+                  );
+                  console.log(`✅ Position ${position} Telegram notifications sent to ${user.username}`);
+                } catch (telegramError) {
+                  console.error(`❌ Failed to send position ${position} Telegram notifications to ${user.username}:`, telegramError);
+                }
+              } else if (user.telegram_username) {
+                console.log(`ℹ️  User ${user.username} has Telegram username but no chat ID - they need to message the bot first`);
+              }
+
+              // Mark this specific user as notified with timestamp
+              await pool.query(
+                `UPDATE users SET notified = true, last_notified = NOW(), updated_at = CURRENT_TIMESTAMP 
+                 WHERE id = $1`,
+                [user.id]
               );
 
-              uniqueEmails.add(user.email);
-              emailsSent.push(user.email);
-              notificationsSent++;
-              
-              console.log(`✅ Email notification sent to ${user.email} for user ${user.username}`);
-            } catch (emailError) {
-              console.error(`❌ Failed to send email to ${user.email}:`, emailError);
+              // Log notification attempt
+              await pool.query(
+                `INSERT INTO notification_logs (user_id, notification_type, email_status) 
+                 VALUES ($1, 'position_notification', 'sent')`,
+                [user.id]
+              );
             }
           } else {
-            console.log(`ℹ️  Email already sent to ${user.email} for another username with same pattern`);
+            console.log(`❌ Position ${position}: No matching users found for pattern: ${userPattern}`);
           }
-
-          // Send Telegram notifications if user has Telegram enabled
-          if (user.telegram_chat_id) {
-            try {
-              console.log(`📱 Sending Telegram notifications to ${user.username} (${user.telegram_username})`);
-              await telegramBotService.sendSuccessiveNotifications(
-                user.telegram_chat_id,
-                user.username,
-                user.telegram_username || user.username,
-                currentUserPattern
-              );
-              console.log(`✅ Telegram notifications sent to ${user.username}`);
-            } catch (telegramError) {
-              console.error(`❌ Failed to send Telegram notifications to ${user.username}:`, telegramError);
-            }
-          } else if (user.telegram_username) {
-            console.log(`ℹ️  User ${user.username} has Telegram username but no chat ID - they need to message the bot first`);
-          }
-
-          // Mark this specific user as notified with timestamp
-          await pool.query(
-            `UPDATE users SET notified = true, last_notified = NOW(), updated_at = CURRENT_TIMESTAMP 
-             WHERE id = $1`,
-            [user.id]
-          );
-
-          // Log notification attempt
-          await pool.query(
-            `INSERT INTO notification_logs (user_id, notification_type, email_status) 
-             VALUES ($1, 'queue_notification', 'sent')`,
-            [user.id]
-          );
-        }
-        
-        if (notificationsSent > 0) {
-          console.log(`📧 ${notificationsSent} unique email notifications sent to: ${emailsSent.join(', ')}`);
         }
       } else {
-        console.log(`❌ No matching users found for pattern: ${currentUserPattern}`);
+        // Fallback to single pattern notification for backward compatibility
+        console.log(`🔄 Fallback to single pattern notification for: ${currentUserPattern}`);
+        
+        const usersResult = await pool.query(
+          `SELECT id, username, email, notified, telegram_username, telegram_chat_id, username_pattern, alternative_pattern, last_notified
+           FROM users 
+           WHERE (UPPER(username_pattern) = UPPER($1) OR UPPER(alternative_pattern) = UPPER($1)) 
+           AND is_active = true
+           AND (
+             notified = false 
+             OR last_notified IS NULL 
+             OR last_notified < NOW() - INTERVAL '30 minutes'
+           )`,
+          [currentUserPattern]
+        );
+
+        if (usersResult.rows.length > 0) {
+          console.log(`🎯 Found ${usersResult.rows.length} matching user(s) for pattern: ${currentUserPattern}`);
+          usersFound = usersResult.rows.length;
+          
+          for (const user of usersResult.rows) {
+            const now = new Date();
+            const lastNotified = user.last_notified ? new Date(user.last_notified) : null;
+            const timeSinceLastNotification = lastNotified ? (now.getTime() - lastNotified.getTime()) / (1000 * 60) : Infinity;
+            
+            console.log(`📧 Processing notification for: ${user.username} (${user.email}) - Last notified: ${timeSinceLastNotification.toFixed(1)} minutes ago`);
+            
+            if (!uniqueEmails.has(user.email)) {
+              try {
+                // Send regular queue notification
+                await this.notificationService.sendQueueNotification(
+                  user.email, 
+                  user.username,
+                  currentUserPattern
+                );
+
+                uniqueEmails.add(user.email);
+                emailsSent.push(user.email);
+                notificationsSent++;
+                
+                console.log(`✅ Email notification sent to ${user.email} for user ${user.username}`);
+              } catch (emailError) {
+                console.error(`❌ Failed to send email to ${user.email}:`, emailError);
+              }
+            }
+
+            // Send Telegram notifications
+            if (user.telegram_chat_id) {
+              try {
+                await telegramBotService.sendSuccessiveNotifications(
+                  user.telegram_chat_id,
+                  user.username,
+                  user.telegram_username || user.username,
+                  currentUserPattern
+                );
+                console.log(`✅ Telegram notifications sent to ${user.username}`);
+              } catch (telegramError) {
+                console.error(`❌ Failed to send Telegram notifications to ${user.username}:`, telegramError);
+              }
+            }
+
+            // Mark user as notified
+            await pool.query(
+              `UPDATE users SET notified = true, last_notified = NOW(), updated_at = CURRENT_TIMESTAMP 
+               WHERE id = $1`,
+              [user.id]
+            );
+
+            await pool.query(
+              `INSERT INTO notification_logs (user_id, notification_type, email_status) 
+               VALUES ($1, 'queue_notification', 'sent')`,
+              [user.id]
+            );
+          }
+        } else {
+          console.log(`❌ No matching users found for pattern: ${currentUserPattern}`);
+        }
+      }
+
+      if (notificationsSent > 0) {
+        console.log(`📧 ${notificationsSent} unique email notifications sent to: ${emailsSent.join(', ')}`);
       }
 
       res.json({ 
         success: true, 
         message: 'Queue status updated successfully',
         currentUserPattern,
-        usersFound: usersResult.rows.length,
+        usersFound,
         notificationsSent,
         emailsSent,
         timestamp: new Date().toISOString()

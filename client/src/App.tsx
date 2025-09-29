@@ -20,11 +20,12 @@ const Navigation: React.FC = () => {
               Register
             </Link>
           </li>
-          {/* <li>
-            <Link to="/queue-status" className={location.pathname === '/queue-status' ? 'active' : ''}>
-              Queue Status
-            </Link>
+          <li>
+            <a href="#footer" className="footer-link">
+              Tip Us
+            </a>
           </li>
+           {/*
           <li>
             <Link to="/dashboard" className={location.pathname === '/dashboard' ? 'active' : ''}>
               Dashboard

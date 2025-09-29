@@ -24,13 +24,14 @@ class UserController {
                     });
                 }
                 const usernamePattern = this.generateUsernamePattern(username);
-                const existingUsername = await database_1.default.query('SELECT id FROM users WHERE username = $1', [username]);
+                const alternativePattern = this.generateAlternativePattern(username);
+                const existingUsername = await database_1.default.query('SELECT id FROM users WHERE LOWER(username) = LOWER($1)', [username]);
                 if (existingUsername.rows.length > 0) {
                     return res.status(409).json({
                         error: 'Username already exists. Please choose a different username.'
                     });
                 }
-                const existingCombination = await database_1.default.query('SELECT id FROM users WHERE username = $1 AND email = $2', [username, email.toLowerCase()]);
+                const existingCombination = await database_1.default.query('SELECT id FROM users WHERE LOWER(username) = LOWER($1) AND LOWER(email) = LOWER($2)', [username, email.toLowerCase()]);
                 if (existingCombination.rows.length > 0) {
                     return res.status(409).json({
                         error: 'This username is already registered with this email address.'
@@ -41,7 +42,7 @@ class UserController {
                 let existingChatId = null;
                 if (cleanTelegramUsername) {
                     console.log(`🔍 Checking for existing chat_id for Telegram username: ${cleanTelegramUsername}`);
-                    const existingTelegramUser = await database_1.default.query('SELECT telegram_chat_id FROM users WHERE telegram_username = $1 AND telegram_chat_id IS NOT NULL ORDER BY created_at DESC LIMIT 1', [cleanTelegramUsername]);
+                    const existingTelegramUser = await database_1.default.query('SELECT telegram_chat_id FROM users WHERE LOWER(telegram_username) = LOWER($1) AND telegram_chat_id IS NOT NULL ORDER BY created_at DESC LIMIT 1', [cleanTelegramUsername]);
                     if (existingTelegramUser.rows.length > 0) {
                         existingChatId = existingTelegramUser.rows[0].telegram_chat_id;
                         console.log(`✅ Found existing chat_id for ${cleanTelegramUsername}: ${existingChatId}`);
@@ -50,9 +51,9 @@ class UserController {
                         console.log(`ℹ️ No existing chat_id found for ${cleanTelegramUsername}`);
                     }
                 }
-                const result = await database_1.default.query(`INSERT INTO users (username, username_pattern, email, telegram_username, telegram_chat_id) 
-         VALUES ($1, $2, $3, $4, $5) 
-         RETURNING id, username, username_pattern, email, telegram_username, telegram_chat_id, is_active, created_at`, [username, usernamePattern, email.toLowerCase(), cleanTelegramUsername, existingChatId]);
+                const result = await database_1.default.query(`INSERT INTO users (username, username_pattern, alternative_pattern, email, telegram_username, telegram_chat_id) 
+         VALUES ($1, $2, $3, $4, $5, $6) 
+         RETURNING id, username, username_pattern, alternative_pattern, email, telegram_username, telegram_chat_id, is_active, created_at`, [username, usernamePattern, alternativePattern, email.toLowerCase(), cleanTelegramUsername, existingChatId]);
                 const newUser = result.rows[0];
                 let welcomeMessageSent = false;
                 if (existingChatId && cleanTelegramUsername) {
@@ -163,7 +164,7 @@ class UserController {
             try {
                 const result = await database_1.default.query(`SELECT id, username, email, is_active, notified 
          FROM users 
-         WHERE username_pattern = $1 AND is_active = true
+         WHERE UPPER(username_pattern) = UPPER($1) AND is_active = true
          ORDER BY created_at ASC`, [pattern]);
                 if (result.rows.length === 0) {
                     return res.status(404).json({ error: 'No active users found with this pattern' });
@@ -194,7 +195,7 @@ class UserController {
             try {
                 const result = await database_1.default.query(`SELECT id, username, username_pattern, email, is_active, notified, created_at 
          FROM users 
-         WHERE email = $1
+         WHERE LOWER(email) = LOWER($1)
          ORDER BY created_at ASC`, [email]);
                 if (result.rows.length === 0) {
                     return res.status(404).json({ error: 'No users found with this email address' });
@@ -315,6 +316,14 @@ class UserController {
         const firstFour = username.substring(0, 4);
         const lastThree = username.substring(username.length - 3);
         return `${firstFour}..${lastThree}`;
+    }
+    generateAlternativePattern(username) {
+        if (username.length < 7) {
+            return null;
+        }
+        const firstFour = username.substring(0, 4);
+        const secondToLastThree = username.substring(username.length - 4, username.length - 1);
+        return `${firstFour}..${secondToLastThree}`;
     }
     validateTelegramUsername(telegramUsername) {
         const cleanUsername = telegramUsername.replace('@', '');

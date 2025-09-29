@@ -165,6 +165,106 @@ Thank you for using PrismaX AI Reminder Service!
     }
   }
 
+  async sendPositionNotification(email: string, username: string, usernamePattern: string, position: number): Promise<void> {
+    try {
+      const positionOrdinal = this.getOrdinalNumber(position);
+      const isNext = position === 1;
+      
+      const { data, error } = await this.resend.emails.send({
+        from: process.env.EMAIL_FROM || 'PrismaX Reminder <noreply@yourdomain.com>',
+        to: [email],
+        subject: isNext ? '🎯 Your Turn at PrismaX AI - Robotic Arm Ready!' : `🏁 You are ${positionOrdinal} in the PrismaX AI Queue`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            ${isNext ? 
+              `<h2 style="color: #2563eb;">🎯 It's Your Turn!</h2>` : 
+              `<h2 style="color: #059669;">🏁 Queue Position Update</h2>`
+            }
+            
+            <p>Hello <strong>${username}</strong>,</p>
+            
+            ${isNext ? 
+              `<p>Great news! It's now your turn to teleoperate the robotic arm on PrismaX AI.</p>` :
+              `<p>You are currently <strong>${positionOrdinal}</strong> in the queue for PrismaX AI teleoperation.</p>`
+            }
+            
+            <div style="background-color: ${isNext ? '#dbeafe' : '#f0fdf4'}; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #1f2937;">📋 Details:</h3>
+              <ul style="margin: 0;">
+                <li><strong>Username:</strong> ${username}</li>
+                <li><strong>Queue ID:</strong> ${usernamePattern}</li>
+                <li><strong>Position:</strong> ${positionOrdinal}</li>
+                <li><strong>Time:</strong> ${new Date().toLocaleString()}</li>
+              </ul>
+            </div>
+            
+            ${isNext ? 
+              `<p><strong>⚡ Quick Action Required:</strong></p>
+               <p>Please return to the PrismaX AI platform immediately to begin your session. The system is waiting for you!</p>` :
+              `<p><strong>ℹ️ What's Next:</strong></p>
+               <p>You're getting closer! Stay nearby and keep the browser tab open. We'll notify you when it's your turn.</p>`
+            }
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.PRISMAX_URL || 'https://app.prismax.ai/tele-op'}" 
+                 style="background-color: ${isNext ? '#2563eb' : '#059669'}; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                ${isNext ? '🚀 Go to PrismaX AI' : '👀 View Queue Status'}
+              </a>
+            </div>
+            
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+            
+            <p style="color: #6b7280; font-size: 14px;">
+              This notification was sent because you registered for queue notifications on PrismaX AI Reminder Service.
+              <br><br>
+              If you no longer wish to receive these notifications, please contact support.
+            </p>
+          </div>
+        `,
+        text: `
+Hello ${username},
+
+${isNext ? 
+  "It's your turn to teleoperate the robotic arm on PrismaX AI!" :
+  `You are currently ${positionOrdinal} in the queue for PrismaX AI teleoperation.`
+}
+
+Details:
+- Username: ${username}
+- Queue ID: ${usernamePattern}
+- Position: ${positionOrdinal}
+- Time: ${new Date().toLocaleString()}
+
+${isNext ?
+  "Please return to the PrismaX AI platform immediately to begin your session." :
+  "You're getting closer! Stay nearby and we'll notify you when it's your turn."
+}
+
+Visit: ${process.env.PRISMAX_URL || 'https://app.prismax.ai/tele-op'}
+
+This notification was sent because you registered for queue notifications on PrismaX AI Reminder Service.
+        `
+      });
+
+      if (error) {
+        console.error('❌ Resend API error:', error);
+        throw new Error(`Position notification failed: ${error.message}`);
+      }
+
+      console.log(`📧 Position ${position} email sent successfully:`, data);
+
+    } catch (error: any) {
+      console.error(`❌ Failed to send position ${position} notification email:`, error);
+      throw new Error(`Position notification failed: ${error.message}`);
+    }
+  }
+
+  private getOrdinalNumber(num: number): string {
+    const suffixes = ["th", "st", "nd", "rd"];
+    const v = num % 100;
+    return num + (suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]);
+  }
+
   async testConnection(): Promise<boolean> {
     try {
       // Test by sending a simple email to a test address

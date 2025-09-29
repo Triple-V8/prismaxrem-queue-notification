@@ -329,6 +329,71 @@ ${level.urgency}
     }
   }
 
+  async sendPositionNotifications(
+    chatId: number, 
+    username: string, 
+    telegramUsername: string, 
+    queuePattern: string,
+    position: number
+  ): Promise<void> {
+    console.log(`📱 Sending position ${position} Telegram notifications for @${telegramUsername}`);
+    
+    const isNext = position === 1;
+    const positionOrdinal = this.getOrdinalNumber(position);
+    
+    if (isNext) {
+      // If it's their turn (position 1), send successive urgent notifications
+      await this.sendSuccessiveNotifications(chatId, username, telegramUsername, queuePattern);
+    } else {
+      // Send a single position update notification
+      const message = this.createPositionUpdateMessage(username, telegramUsername, queuePattern, position, positionOrdinal);
+      
+      await this.bot!.sendMessage(chatId, message, {
+        parse_mode: 'HTML',
+        disable_web_page_preview: false,
+        reply_markup: {
+          inline_keyboard: [[
+            {
+              text: '👀 View Queue Status',
+              url: 'https://app.prismax.ai/tele-op'
+            }
+          ]]
+        }
+      });
+
+      console.log(`✅ Position ${position} notification sent to @${telegramUsername} (${chatId})`);
+    }
+  }
+
+  private createPositionUpdateMessage(username: string, telegramUsername: string, queuePattern: string, position: number, positionOrdinal: string): string {
+    const positionEmojis = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+    const positionIcon = positionEmojis[position - 1] || '🔢';
+
+    return `${positionIcon} <b>QUEUE POSITION UPDATE</b>
+
+🏁 You are <b>${positionOrdinal}</b> in the queue!
+
+👤 <b>Username:</b> ${username}
+🎯 <b>Pattern:</b> <code>${queuePattern}</code>
+📱 <b>Telegram:</b> @${telegramUsername}
+📍 <b>Position:</b> ${positionOrdinal}
+
+⏰ <b>Time:</b> ${new Date().toLocaleTimeString()}
+
+${position <= 3 ? 
+  '🔥 <b>You\'re getting close! Stay ready!</b>' : 
+  'ℹ️ Keep an eye on your position - you\'ll get urgent alerts when it\'s your turn.'
+}
+
+🔗 <b>View queue:</b> https://app.prismax.ai/tele-op`;
+  }
+
+  private getOrdinalNumber(num: number): string {
+    const suffixes = ["th", "st", "nd", "rd"];
+    const v = num % 100;
+    return num + (suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]);
+  }
+
   getServiceStatus(): { enabled: boolean; botUsername: string; initLink: string } {
     return {
       enabled: this.isEnabled,

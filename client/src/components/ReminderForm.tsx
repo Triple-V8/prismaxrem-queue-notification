@@ -222,7 +222,7 @@ const ReminderForm: React.FC = () => {
                 </div>
               </div>
             )}
-             <div className="tip-section">
+             {/* <div className="tip-section">
                     <div className="tip-header">
                         <span className="tip-icon">💰</span>
                         <span className="tip-text">Don't forget to tip us!</span>
@@ -265,7 +265,7 @@ const ReminderForm: React.FC = () => {
                             <span className="copy-success">Solana address copied to clipboard!</span>
                         )}
                     </div>
-                </div>
+                </div> */}
             <div style={{
               borderTop: '1px solid #ddd',
               marginTop: '25px',

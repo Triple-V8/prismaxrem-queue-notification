@@ -9,4 +9,5 @@ router.get('/current', queueController.getCurrentQueueStatus.bind(queueControlle
 router.get('/history', queueController.getQueueHistory.bind(queueController));
 router.get('/stats/notifications', queueController.getNotificationStats.bind(queueController));
 router.post('/reset-notifications', queueController.resetNotifications.bind(queueController));
+router.post('/reset-inactive-notifications', queueController.resetNotificationForInactiveUsers.bind(queueController));
 exports.default = router;

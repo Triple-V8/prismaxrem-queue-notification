@@ -30,10 +30,10 @@ exports.validateUserRegistration = validateUserRegistration;
 const validateQueueUpdate = (data) => {
     const schema = joi_1.default.object({
         currentUserPattern: joi_1.default.string()
-            .pattern(/^[a-zA-Z0-9]{4}\.\.[a-zA-Z0-9]{3}$/)
+            .pattern(/^[a-zA-Z0-9]{4}\.\.[a-zA-Z0-9]{3}$/i)
             .required()
             .messages({
-            'string.pattern.base': 'Invalid username pattern format. Expected: abcd..xyz',
+            'string.pattern.base': 'Invalid username pattern format. Expected: abcd..xyz (4 chars + .. + 3 chars)',
             'any.required': 'Current user pattern is required'
         }),
         rawContent: joi_1.default.string().optional(),

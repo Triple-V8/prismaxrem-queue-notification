@@ -47,31 +47,42 @@ class QueueMonitor {
       const queueItems = queueList.querySelectorAll('.QueuePanel_queueItem__jK2hp') ||
                          queueList.querySelectorAll('[class*="queueItem"]');
       
-      if (queueItems.length < 2) {
-        console.log('⚠️ Less than 2 queue items found');
+      if (queueItems.length === 0) {
+        console.log('⚠️ No queue items found');
         return this.extractQueueInfoFallback();
       }
       
-      // Get second item (position 02)
-      const secondItem = queueItems[1];
-      const userSpan = secondItem.querySelector('.QueuePanel_queueUser__ql2R9 span') ||
-                       secondItem.querySelector('span');
+      // Extract top 5 users (or all available if less than 5)
+      const topUsers = [];
+      const maxUsers = Math.min(5, queueItems.length);
       
-      if (!userSpan) {
-        console.log('⚠️ User span not found');
-        return this.extractQueueInfoFallback();
+      for (let i = 0; i < maxUsers; i++) {
+        const queueItem = queueItems[i];
+        const userSpan = queueItem.querySelector('.QueuePanel_queueUser__ql2R9 span') ||
+                         queueItem.querySelector('span');
+        
+        if (userSpan) {
+          const userPattern = userSpan.textContent.trim();
+          if (userPattern && userPattern.includes('..')) {
+            topUsers.push({
+              position: i + 1,
+              userPattern: userPattern,
+              isCurrentUser: i === 0
+            });
+            console.log(`🎯 Position ${i + 1}: ${userPattern}`);
+          }
+        }
       }
       
-      const currentUserPattern = userSpan.textContent.trim();
-      console.log(`🎯 Found pattern: "${currentUserPattern}"`);
-      
-      if (!currentUserPattern.includes('..')) {
+      if (topUsers.length === 0) {
+        console.log('⚠️ No valid user patterns found');
         return this.extractQueueInfoFallback();
       }
       
       return {
-        currentUserPattern: currentUserPattern,
-        rawContent: `Queue Position 02: ${currentUserPattern}`,
+        topUsers: topUsers,
+        currentUserPattern: topUsers[0]?.userPattern || '', // Keep for backward compatibility
+        rawContent: this.formatQueueContent(topUsers),
         timestamp: new Date().toISOString()
       };
       
@@ -79,6 +90,13 @@ class QueueMonitor {
       console.error('❌ Error extracting queue info:', error);
       return this.extractQueueInfoFallback();
     }
+  }
+
+  formatQueueContent(topUsers) {
+    const queueLines = topUsers.map(user => 
+      `Position ${user.position}: ${user.userPattern}${user.isCurrentUser ? ' (Current)' : ''}`
+    );
+    return queueLines.join(' | ');
   }
 
   extractQueueInfoFallback() {
@@ -96,8 +114,15 @@ class QueueMonitor {
         const currentUserPattern = matches[0];
         console.log(`🎯 Found pattern via fallback: "${currentUserPattern}"`);
         
+        const topUsers = [{
+          position: 1,
+          userPattern: currentUserPattern,
+          isCurrentUser: true
+        }];
+        
         return {
-          currentUserPattern: currentUserPattern,
+          topUsers: topUsers,
+          currentUserPattern: currentUserPattern, // Keep for backward compatibility
           rawContent: `Fallback extraction: ${currentUserPattern}`,
           timestamp: new Date().toISOString()
         };

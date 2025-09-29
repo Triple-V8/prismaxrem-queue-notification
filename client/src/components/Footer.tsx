@@ -41,7 +41,7 @@ const Footer: React.FC = () => {
     };
 
     return (
-        <footer className="footer">
+        <footer id="footer" className="footer">
             <div className="footer-content">
                 {/* Tip Section */}
                    <div className="tip-section">
@@ -92,7 +92,7 @@ const Footer: React.FC = () => {
                 {/* Made With Love Section */}
                 <div className="made-with-love">
                     <span>Made with ❤️ by </span>
-                    <strong>3plev.eth</strong>
+                    <strong>V3</strong>
                 </div>
 
                 {/* Additional Info */}
