@@ -27,43 +27,6 @@ const ReminderForm: React.FC = () => {
   const [usernamePattern, setUsernamePattern] = useState('');
   const [alternativePattern, setAlternativePattern] = useState('');
 
-    const [copiedEth, setCopiedEth] = useState(false);
-    const [copiedSol, setCopiedSol] = useState(false);
-      const ethAddress = "0x5B6d25947A28B9cBfb1CeF386c28b03f9A885B69";
-      const solAddress = "VxEgahsuRzdcXzuNcXnDbD7SjeKej4utdm8xqj7b185";
-  
-      const copyAddress = async (address: string, type: 'eth' | 'sol') => {
-          try {
-              await navigator.clipboard.writeText(address);
-              if (type === 'eth') {
-                setCopiedEth(true);
-                setTimeout(() => setCopiedEth(false), 2000);
-              } else {
-                setCopiedSol(true);
-                setTimeout(() => setCopiedSol(false), 2000);
-              }
-          } catch (err) {
-              console.error('Failed to copy address:', err);
-              // Fallback for older browsers
-              const textArea = document.createElement('textarea');
-              textArea.value = address;
-              document.body.appendChild(textArea);
-              textArea.select();
-              document.execCommand('copy');
-              document.body.removeChild(textArea);
-              if (type === 'eth') {
-                setCopiedEth(true);
-                setTimeout(() => setCopiedEth(false), 2000);
-              } else {
-                setCopiedSol(true);
-                setTimeout(() => setCopiedSol(false), 2000);
-              }
-          }
-      };
-  
-      const shortenAddress = (address: string) => {
-          return `${address.slice(0, 6)}...${address.slice(-4)}`;
-      };
   
       
 
