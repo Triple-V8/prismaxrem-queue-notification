@@ -1,5 +1,6 @@
-# Dependencies
+# Dependencies - all node_modules directories
 node_modules/
+**/node_modules/
 */node_modules/
 client/node_modules/
 server/node_modules/
